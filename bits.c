@@ -19,7 +19,7 @@
  * Difficulty: 1
  */
 int bitAnd(int x, int y) {
-    return 2;
+    return ~(~x|~y);//只有两个都是1才行,|只有00是特殊的
 }
 
 /*
@@ -30,7 +30,7 @@ int bitAnd(int x, int y) {
  *   Difficulty: 1
  */
 int bitXor(int x, int y) {
-    return 2;
+    return ~(~x & ~y)& ~(x&y);//要一个0一个1,&只有11是特殊的
 }
 
 /*
@@ -50,7 +50,11 @@ int bitXor(int x, int y) {
  *   1 if x and y have the same sign , 0 otherwise.
  */
 int samesign(int x, int y) {
-    return 2;
+    if(!x)
+        return !y;//排除x=0
+    if(!y)
+        return 0;
+    return !((x>>31)^(y>>31));//取最高位,int
 }
 
 /*
@@ -63,7 +67,28 @@ int samesign(int x, int y) {
  *   Difficulty: 4
  */
 int logtwo(int v) {
-    return 2;
+    int record=0;
+    int tool;
+
+    tool=(v>0xFFFF)<<4;
+    record=record|tool;
+    v=v>>tool;
+
+    tool=(v>0xFF)<<3;
+    record=record|tool;
+    v=v>>tool;
+
+    tool=(v>0xF)<<2;
+    record=record|tool;
+    v=v>>tool;
+
+    tool=(v>0x3)<<1;
+    record=record|tool;
+    v=v>>tool;
+
+    record=record|(v>0x1);
+
+    return record;
 }
 
 /*
@@ -76,7 +101,22 @@ int logtwo(int v) {
  *    Difficulty: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int tool_zero,tool_m,tool_n;//先存m,n.再清零，再填
+    m=m<<3;
+    n=n<<3;
+    tool_zero=~((0xFF<<m)|(0xFF<<n));//清零的
+    tool_m=(x>>m)&0xFF;
+    tool_n=(x>>n)&0xFF;
+    x=tool_zero&x;//清零
+    x=x|(tool_m<<n);
+    x=x|(tool_n<<m);
+    return x;
+    /*fangfa2
+    int tool;
+    n = n << 3;
+    m = m << 3;
+    tool = ((x >> n) ^ (x >> m)) & 0xFF;
+    return x ^ (tool << n) ^ (tool << m);*/
 }
 
 /*
@@ -88,7 +128,15 @@ int byteSwap(int x, int n, int m) {
  *   Difficulty: 3
  */
 unsigned reverse(unsigned v) {
-    return 2;
+    unsigned int res,tool;
+    res=0;
+    for(int i=32;i;i-=1)
+    {
+        tool=(v>>(i-1))&1;
+        tool=tool<<(32-i);
+        res=res|tool;
+    }
+    return res;
 }
 
 /*
@@ -100,7 +148,10 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    return 2;
+    int tool=((1<<31)>>n)<<1;
+    x=x>>n;
+    x=(~tool)&x;
+    return x;
 }
 
 /*
@@ -112,7 +163,31 @@ int logicalShift(int x, int n) {
  *   Difficulty: 4
  */
 int leftBitCount(int x) {
-    return 2;
+    int rec=0;
+    int tool;
+    x=~x;
+
+    tool=x>>16;
+    rec=rec|((!tool)<<4);
+    x=x>>((!(!tool))<<4);
+
+    tool=x>>8;
+    rec=rec|((!tool)<<3);
+    x=x>>((!(!tool))<<3);
+
+    tool=x>>4;
+    rec=rec|((!tool)<<2);
+    x=x>>((!(!tool))<<2);
+
+    tool=x>>2;
+    rec=rec|((!tool)<<1);
+    x=x>>((!(!tool))<<1);
+
+    tool=x>>1;
+    rec=rec|(!tool);
+    rec = rec + !x;//防止x=-1
+
+    return rec;
 }
 
 /*
@@ -124,7 +199,42 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    return 2;
+    unsigned int a=x;
+    unsigned int res,e,m;
+    if(x<0){
+        res=0x80000000;
+        a=~a+1;}
+    else if (x>0)res=0;
+    else return 0;
+    
+    int i;
+    for (i=31;i>0;i=i-1)
+    {
+        if(a>>i)break;
+    }
+    e=(i+127)<<23;
+    m = a & ~(1 << i);
+    if(i>23)
+    {
+        unsigned int tip=0xFFFFFFFF;
+        tip=tip>>(55-i);
+        tip=m&tip;
+        unsigned int t=1<<(i-24);
+        m=m>>(i-23);
+        if(tip==t)
+        {
+            if(m&1)
+            {
+                m=m+1;                
+            }
+        }
+        else if(tip>t)
+        {
+            m=m+1;
+        }
+    }
+    else if(i<23)m=m<<(23-i);
+    return res+e+m;
 }
 
 /*
@@ -139,7 +249,26 @@ unsigned float_i2f(int x) {
  *   Difficulty: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+    unsigned int u;
+    u=0x7FFFFFFF&uf;
+    if(!u)return uf;
+
+    unsigned int e;
+    e=(u>>23);
+    if(e==0)
+    {
+        unsigned int m=(0xFFFFFFFF>>9)&uf;
+        m=m<<1;
+        uf=(uf&(0xFFFFFFFF<<23))|m;
+        return uf;
+    }
+    if(e==(0xFE))
+    {
+        if(uf>>31)return 0xFF800000;
+        else return  0x7F800000;
+    }
+    if(e==0xFF)return uf;
+    return uf+(1<<23);
 }
 
 /*
@@ -156,7 +285,31 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    return 2;
+    int sig=(uf2 & 0x80000000);
+    int e=((uf2 & 0x7FFFFFFF)>>20)-1023;
+    if(e<0) return 0;
+    if (!e) 
+    {
+        if (sig) return ~0;  /* -1 */
+        else return 1;
+    }   
+    if(e>30)return 0x80000000;
+
+    unsigned int a=uf2&0x000FFFFF;
+    a=(a<<12)|(uf1>>20);
+
+    //unsigned int tool=a&(0xFFFFFFFF>>e);//不需要四舍五入
+    a=a>>(32-e);
+    /*if (tool>(1<<(31-e)))a=a+1;
+    else if(tool>(1<<(31-e)));
+    else 
+    {
+        if(a&1) a=a+1;
+    }*/
+    a=a|(1<<e);
+    if (sig)
+        return ~a + 1;
+    return a;
 }
 
 /*
@@ -173,5 +326,8 @@ int float64_f2i(unsigned uf1, unsigned uf2) {
  *   Difficulty: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    if(x<=-150)return 0;
+    else if(x>127)return 0x7F800000;
+    else if(x>-127)return (x+127)<<23;
+    else if(x<=-127)return 1<<(x+149);
 }
